@@ -330,10 +330,12 @@ void ultrasound_Cscan_process::handleButton_load()
         this->layout->addWidget(myButton_addNoise);
         connect(myButton_addNoise, &QPushButton::clicked, this, &ultrasound_Cscan_process::handleButton_addNoise);
     }
-    QLineEdit* snrInput = new QLineEdit(this);
-    snrInput->setObjectName("snrInput"); // Assign unique object name
-    snrInput->setPlaceholderText("Enter SNR value");
-    this->addNewWidgetAndReorderLayout(snrInput);
+    if (!widgetExistsInLayout<QLineEdit>(this->layout, "snrInput")) {
+        QLineEdit* snrInput = new QLineEdit(this);
+        snrInput->setObjectName("snrInput"); // Assign unique object name
+        snrInput->setPlaceholderText("Enter SNR value");
+        this->addNewWidgetAndReorderLayout(snrInput);
+    }
 }
 
 void ultrasound_Cscan_process::handleButton_save(){
@@ -979,6 +981,14 @@ void ultrasound_Cscan_process::onCustomPlotClicked_Cscan(QMouseEvent* event)
 }
 
 void ultrasound_Cscan_process::addNewWidgetAndReorderLayout(QWidget* newWidget) {
+    // Check if the newWidget already exists
+    for (int i = 0; i < this->layout->count(); ++i) {
+        QWidget* existingWidget = this->layout->itemAt(i)->widget();
+        if (existingWidget == newWidget) {
+            // Widget already exists in the layout, so don't add it again
+            return;
+        }
+    }
     // Add the new widget
     this->layout->addWidget(newWidget);
     // Check if the vertical spacer already exists

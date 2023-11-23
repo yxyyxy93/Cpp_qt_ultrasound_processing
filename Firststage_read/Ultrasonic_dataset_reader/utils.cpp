@@ -334,7 +334,6 @@ void addGaussianNoise(QVector<double>& signal, double snrDb) {
     }
 }
 
-
 // ************** debug
 void printWidgetInfo(QWidget *widget) {
     if (widget) {
