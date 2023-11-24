@@ -69,7 +69,7 @@ ultrasound_cscan_seg::ultrasound_cscan_seg(QWidget *parent,
     tabWidget->show();
 }
 
-// ************* 2D analytic-signal and ｖｉｓｕａｌｉｚａｔｉｏｎ
+// ************* 2D analytic-signal and visualization
 void ultrasound_cscan_seg::handleButton_Cscan() {
     this->x_size = ultrasound_Cscan_process::C_scan_AS.size();
     this->y_size = (x_size>0) ? ultrasound_Cscan_process::C_scan_AS[0].size() : 0;
@@ -365,7 +365,6 @@ void ultrasound_cscan_seg::handleButton_multiSNR() {
                     file.close();
                     return;
                 }
-                QVector<std::complex<double>> Ascan_as;
                 for (int i = 0; i < this->C_scan_double.size(); i++) {
                     for (int j = 0; j < this->C_scan_double[i].size(); j++) {
                         QVector<double> Ascan = this->C_scan_double[i][j]; // avoid too small value
@@ -375,6 +374,8 @@ void ultrasound_cscan_seg::handleButton_multiSNR() {
                         QStringList values;
                         for (int k = 0; k <Ascan_ds.size(); ++k) {
                             values << QString::number(1e10*Ascan_ds[k]);
+                            if (std::isnan(1e10*Ascan_ds[k]))
+                                qDebug() << "nan at: " << k;
                         }
                         out << values.join(',') << "\n";
                     }

@@ -122,3 +122,11 @@ bool widgetExistsInLayout(QLayout* layout, const QString& propertyValue, const Q
 // ************** debug
 void printWidgetInfo(QWidget *widget);
 void printLayoutInfo(QLayout *layout);
+
+// ********** fill nan
+// Check if a value is NaN
+bool isNaN(double value);
+// Get the average of neighboring values for a given position in a 3D dataset
+double getAverageOfNeighbors(const QVector<QVector<QVector<double>>>& data, int x, int y, int z);
+// Fill NaN values in a 3D dataset with the average of their nearest neighbors
+void fillNanWithNearestNeighbors(QVector<QVector<QVector<double>>>& data);

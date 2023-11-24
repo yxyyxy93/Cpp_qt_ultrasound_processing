@@ -16,6 +16,8 @@
 #include <algorithm> // for std::count_if
 #include <functional> // for std::bind, std::placeholders, and std::less
 
+#include <limits>
+#include <cmath>  // for std::isnan
 
 // analytic-signal calculation
 QVector<std::complex<double>> analyticSignal(const QVector<double>& signal)
@@ -367,4 +369,48 @@ void printLayoutInfo(QLayout *layout) {
     }
 }
 
+
+// **************** fill in nan
+bool isNaN(double value) {
+    return std::isnan(value);
+}
+double getAverageOfNeighbors(const QVector<QVector<QVector<double>>>& data, int x, int y, int z) {
+    double sum = 0.0;
+    int count = 0;
+    int dx[] = {-1, 0, 1, 0, 0, 0};
+    int dy[] = {0, -1, 0, 1, 0, 0};
+    int dz[] = {0, 0, 0, 0, -1, 1};
+
+    for (int i = 0; i < 6; ++i) {
+        int nx = x + dx[i];
+        int ny = y + dy[i];
+        int nz = z + dz[i];
+
+        if (nx >= 0 && nx < data.size() &&
+            ny >= 0 && ny < data[nx].size() &&
+            nz >= 0 && nz < data[nx][ny].size() &&
+            !isNaN(data[nx][ny][nz])) {
+            sum += data[nx][ny][nz];
+            ++count;
+        }
+    }
+
+    if (count > 0) {
+        return sum / count;
+    } else {
+        return 0;  // Default value if no neighbors are available
+    }
+}
+void fillNanWithNearestNeighbors(QVector<QVector<QVector<double>>>& data) {
+    for (int x = 0; x < data.size(); ++x) {
+        for (int y = 0; y < data[x].size(); ++y) {
+            for (int z = 0; z < data[x][y].size(); ++z) {
+                if (isNaN(data[x][y][z])) {
+                    qDebug() << "find Nan";
+                    data[x][y][z] = getAverageOfNeighbors(data, x, y, z);
+                }
+            }
+        }
+    }
+}
 

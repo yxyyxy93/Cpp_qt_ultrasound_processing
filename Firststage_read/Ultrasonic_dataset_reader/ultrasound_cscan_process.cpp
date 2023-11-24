@@ -297,6 +297,8 @@ void ultrasound_Cscan_process::handleButton_load()
     qDebug() << this->C_scan_double.size();
     qDebug() << this->C_scan_double[0].size();
     qDebug() << this->C_scan_double[0][0].size();
+    // fill nan
+    fillNanWithNearestNeighbors(this->C_scan_double);
     QVector<std::complex<double>> Ascan_as;
     QVector<QVector<std::complex<double>>> Bscan_as;
     // calculate C_scan_AS
