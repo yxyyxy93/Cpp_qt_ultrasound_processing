@@ -55,9 +55,11 @@ private slots:
     void addNewWidgetAndReorderLayout(QWidget* newWidget);
 
 private:
-    // Qt interfaces
+    // Qt interfaces for load file
     QPushButton *myButton_load;
     QPushButton *myButton_save;
+    void processFile(const QFileInfo &fileInfo);
+
     // QPushButton *myButton_loadraw;
     QPushButton *myButton_orthoslice;
     QPushButton *myButton_surface;

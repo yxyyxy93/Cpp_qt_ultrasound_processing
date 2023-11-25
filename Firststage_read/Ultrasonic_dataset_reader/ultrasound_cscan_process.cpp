@@ -108,11 +108,107 @@ void ultrasound_Cscan_process::handleButton_load()
     }
     // Determine the file type based on its extension
     QFileInfo fileInfo(this->fn);
+    this->C_scan_double.clear();
+    this->C_scan_AS.clear();
+    this->processFile(fileInfo);
+    qDebug() << this->C_scan_double.size();
+    qDebug() << this->C_scan_double[0].size();
+    qDebug() << this->C_scan_double[0][0].size();
+    // fill nan
+    fillNanWithNearestNeighbors(this->C_scan_double);
+    QVector<std::complex<double>> Ascan_as;
+    QVector<QVector<std::complex<double>>> Bscan_as;
+    // calculate C_scan_AS
+    for(int i = 0; i < this->C_scan_double.size(); i++) {
+        for(int j = 0; j < this->C_scan_double[i].size(); j++) {
+            QVector<double> Ascan = this->C_scan_double[i][j];
+            Ascan_as = analyticSignal(Ascan);
+            Bscan_as.push_back(Ascan_as);
+        }
+        this->m_progressBar->setValue(100 * i / this->C_scan_double.size());
+        // Update the progress bar
+        QCoreApplication::processEvents(); // Allow GUI updates
+        this->C_scan_AS.push_back(Bscan_as);
+        Bscan_as.clear();
+    }
+    this->m_progressBar->setValue(100);
+    // add a button to trim the dataset
+    if (!widgetExistsInLayout<QPushButton>(this->layout, "myButton_trim")) {
+        QPushButton* myButton_trim = new QPushButton(tr("Trim the dataset"), this);
+        myButton_trim->setObjectName("myButton_trim"); // assign unique object name
+        this->layout->addWidget(myButton_trim);
+        connect(myButton_trim,
+                &QPushButton::clicked, this,
+                &ultrasound_Cscan_process::handleButton_trim);
+    }
+    // Check if the 'Add Noise' button already exists in the layout
+    if (!widgetExistsInLayout<QPushButton>(this->layout, "myButton_addNoise")) {
+        // Create the 'Add Noise' button
+        QPushButton* myButton_addNoise = new QPushButton(tr("Add Noise"), this);
+        myButton_addNoise->setObjectName("myButton_addNoise"); // Assign unique object name
+        this->layout->addWidget(myButton_addNoise);
+        connect(myButton_addNoise, &QPushButton::clicked, this, &ultrasound_Cscan_process::handleButton_addNoise);
+    }
+    if (!widgetExistsInLayout<QLineEdit>(this->layout, "snrInput")) {
+        QLineEdit* snrInput = new QLineEdit(this);
+        snrInput->setObjectName("snrInput"); // Assign unique object name
+        snrInput->setPlaceholderText("Enter SNR value");
+        this->addNewWidgetAndReorderLayout(snrInput);
+    }
+}
+
+void ultrasound_Cscan_process::handleButton_save(){
+    QString filename = QFileDialog::getSaveFileName(this,
+                                                    tr("Save Vector"),
+                                                    QDir::homePath(),
+                                                    tr("Text Files (*.txt)"));
+    QFile file(filename);
+    if (file.open(QIODevice::WriteOnly)) {
+        QDataStream out(&file); // Create a QDataStream to write to the file
+
+        // Write the dimensions as a header
+        qint32 n1 = this->C_scan_double.size();
+        qint32 n2 = this->C_scan_double[0].size();
+        qint32 n3 = this->C_scan_double[0][0].size();
+        out << n1 << n2 << n3;
+
+        // Serialize the data to the stream
+        out << this->C_scan_double;
+
+        file.close();
+    }
+    // save C_scan_AS
+    filename = QFileDialog::getSaveFileName(this,
+                                            tr("Save Vector"),
+                                            QDir::homePath(),
+                                            tr("Text Files AS (*.txt)"));
+    std::string stdString = filename.toStdString();
+    std::ofstream fileas(stdString, std::ios::binary | std::ios::out);
+
+    // Write the dimensions
+    int32_t n1 = this->C_scan_AS.size();
+    int32_t n2 = this->C_scan_AS[0].size();
+    int32_t n3 = this->C_scan_AS[0][0].size();
+    fileas.write(reinterpret_cast<char*>(&n1), sizeof(n1));
+    fileas.write(reinterpret_cast<char*>(&n2), sizeof(n2));
+    fileas.write(reinterpret_cast<char*>(&n3), sizeof(n3));
+
+    // Write the data
+    for (int i = 0; i < n1; ++i) {
+        for (int j = 0; j < n2; ++j) {
+            for (int k = 0; k < n3; ++k) {
+                double value = abs(this->C_scan_AS[i][j][k]);
+                fileas.write(reinterpret_cast<char*>(&value), sizeof(value));
+            }
+        }
+    }
+    file.close();
+}
+
+void ultrasound_Cscan_process::processFile(const QFileInfo &fileInfo) {
     QString extension = fileInfo.suffix();
     QVector<QVector<double>> B_scan_double;
     QVector<double> A_scan_double;
-    this->C_scan_double.clear();
-    this->C_scan_AS.clear();
     if (extension == "txt") {
         // The file is a text file
         // read the data
@@ -294,98 +390,6 @@ void ultrasound_Cscan_process::handleButton_load()
     } else {
         qDebug() << "The file type is unknown";
     }
-    qDebug() << this->C_scan_double.size();
-    qDebug() << this->C_scan_double[0].size();
-    qDebug() << this->C_scan_double[0][0].size();
-    // fill nan
-    fillNanWithNearestNeighbors(this->C_scan_double);
-    QVector<std::complex<double>> Ascan_as;
-    QVector<QVector<std::complex<double>>> Bscan_as;
-    // calculate C_scan_AS
-    for(int i = 0; i < this->C_scan_double.size(); i++) {
-        for(int j = 0; j < this->C_scan_double[i].size(); j++) {
-            QVector<double> Ascan = this->C_scan_double[i][j];
-            Ascan_as = analyticSignal(Ascan);
-            Bscan_as.push_back(Ascan_as);
-        }
-        this->m_progressBar->setValue(100 * i / this->C_scan_double.size());
-        // Update the progress bar
-        QCoreApplication::processEvents(); // Allow GUI updates
-        this->C_scan_AS.push_back(Bscan_as);
-        Bscan_as.clear();
-    }
-    this->m_progressBar->setValue(100);
-    // add a button to trim the dataset
-    if (!widgetExistsInLayout<QPushButton>(this->layout, "myButton_trim")) {
-        QPushButton* myButton_trim = new QPushButton(tr("Trim the dataset"), this);
-        myButton_trim->setObjectName("myButton_trim"); // assign unique object name
-        this->layout->addWidget(myButton_trim);
-        connect(myButton_trim,
-                &QPushButton::clicked, this,
-                &ultrasound_Cscan_process::handleButton_trim);
-    }
-    // Check if the 'Add Noise' button already exists in the layout
-    if (!widgetExistsInLayout<QPushButton>(this->layout, "myButton_addNoise")) {
-        // Create the 'Add Noise' button
-        QPushButton* myButton_addNoise = new QPushButton(tr("Add Noise"), this);
-        myButton_addNoise->setObjectName("myButton_addNoise"); // Assign unique object name
-        this->layout->addWidget(myButton_addNoise);
-        connect(myButton_addNoise, &QPushButton::clicked, this, &ultrasound_Cscan_process::handleButton_addNoise);
-    }
-    if (!widgetExistsInLayout<QLineEdit>(this->layout, "snrInput")) {
-        QLineEdit* snrInput = new QLineEdit(this);
-        snrInput->setObjectName("snrInput"); // Assign unique object name
-        snrInput->setPlaceholderText("Enter SNR value");
-        this->addNewWidgetAndReorderLayout(snrInput);
-    }
-}
-
-void ultrasound_Cscan_process::handleButton_save(){
-    QString filename = QFileDialog::getSaveFileName(this,
-                                                    tr("Save Vector"),
-                                                    QDir::homePath(),
-                                                    tr("Text Files (*.txt)"));
-    QFile file(filename);
-    if (file.open(QIODevice::WriteOnly)) {
-        QDataStream out(&file); // Create a QDataStream to write to the file
-
-        // Write the dimensions as a header
-        qint32 n1 = this->C_scan_double.size();
-        qint32 n2 = this->C_scan_double[0].size();
-        qint32 n3 = this->C_scan_double[0][0].size();
-        out << n1 << n2 << n3;
-
-        // Serialize the data to the stream
-        out << this->C_scan_double;
-
-        file.close();
-    }
-    // save C_scan_AS
-    filename = QFileDialog::getSaveFileName(this,
-                                            tr("Save Vector"),
-                                            QDir::homePath(),
-                                            tr("Text Files AS (*.txt)"));
-    std::string stdString = filename.toStdString();
-    std::ofstream fileas(stdString, std::ios::binary | std::ios::out);
-
-    // Write the dimensions
-    int32_t n1 = this->C_scan_AS.size();
-    int32_t n2 = this->C_scan_AS[0].size();
-    int32_t n3 = this->C_scan_AS[0][0].size();
-    fileas.write(reinterpret_cast<char*>(&n1), sizeof(n1));
-    fileas.write(reinterpret_cast<char*>(&n2), sizeof(n2));
-    fileas.write(reinterpret_cast<char*>(&n3), sizeof(n3));
-
-    // Write the data
-    for (int i = 0; i < n1; ++i) {
-        for (int j = 0; j < n2; ++j) {
-            for (int k = 0; k < n3; ++k) {
-                double value = abs(this->C_scan_AS[i][j][k]);
-                fileas.write(reinterpret_cast<char*>(&value), sizeof(value));
-            }
-        }
-    }
-    file.close();
 }
 
 // manipulate dataset
@@ -453,8 +457,8 @@ void ultrasound_Cscan_process::handleButton_surface()
             maxElementIndex = std::max_element(Ascan_as.begin(),
                                                Ascan_as.end(),
                                                [](std::complex<double> a, std::complex<double> b) {
-                    return std::abs(a) < std::abs(b);
-        });
+                                                   return std::abs(a) < std::abs(b);
+                                               });
             Front_surface_idx_i.push_back(std::distance(Ascan_as.begin(), maxElementIndex));
             Front_surface_val_i.push_back(std::abs(*maxElementIndex));
             this->m_progressBar->setValue(100 * i / this->C_scan_double.size());
@@ -495,7 +499,7 @@ void ultrasound_Cscan_process::handleButton_alignsurface(){
     for(int i = 0; i < this->Front_surface_idx.size(); i++) {
         for(int j = 0; j < this->Front_surface_idx[i].size(); j++) {
             min_idx = (min_idx>=this->Front_surface_idx[i][j])?
-                        this->Front_surface_idx[i][j]:min_idx;
+                          this->Front_surface_idx[i][j]:min_idx;
         }
     }
     min_idx = 50; // manual setting !!!!!!!!
@@ -698,33 +702,33 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
     plot1l->addWidget(scrollBarX);
     plot1l->addWidget(sBX_label);
     plot1l->addWidget(this->customPlot1);
-//    plot1l->addStretch(1); // Add stretch factor
+    //    plot1l->addStretch(1); // Add stretch factor
 
     plot2l->addWidget(scrollBarY);
     plot2l->addWidget(sBY_label);
     plot2l->addWidget(this->customPlot2);
-//    plot2l->addStretch(1); // Add stretch factor
+    //    plot2l->addStretch(1); // Add stretch factor
 
     plot3l->addWidget(scrollBarZ);
     plot3l->addWidget(sBZ_label);
     plot3l->addWidget(comboBox);
     plot3l->addWidget(this->customPlot3);
-//    plot3l->addStretch(1); // Add stretch factor
+    //    plot3l->addStretch(1); // Add stretch factor
     // Adjust the horizontal layout
     hLayout->addWidget(plot1w);
     hLayout->addWidget(plot2w);
     hLayout->addWidget(plot3w);
-//    hLayout->setStretch(0, 1); // Assign stretch factor to plot1w
-//    hLayout->setStretch(1, 1); // Assign stretch factor to plot2w
-//    hLayout->setStretch(2, 1); // Assign stretch factor to plot3w
+    //    hLayout->setStretch(0, 1); // Assign stretch factor to plot1w
+    //    hLayout->setStretch(1, 1); // Assign stretch factor to plot2w
+    //    hLayout->setStretch(2, 1); // Assign stretch factor to plot3w
     // Set the horizontal layout to the main widget or window
     rightPanel->setLayout(hLayout);
     this->addNewWidgetAndReorderLayout(rightPanel);
     rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-//    printWidgetInfo(this->customPlot3);
-//    printWidgetInfo(plot3w);
-//    printWidgetInfo(rightPanel);
+    //    printWidgetInfo(this->customPlot3);
+    //    printWidgetInfo(plot3w);
+    //    printWidgetInfo(rightPanel);
     printLayoutInfo(hLayout);
     printLayoutInfo(plot3l);
 
@@ -866,8 +870,8 @@ void ultrasound_Cscan_process::updatePlot() {
     // Set the color map for the color scale
     colorScale->setDataRange(map3->dataRange());
     colorScale->setGradient(map3->gradient());
-//    map1->setColorScale(colorScale);
-//    map2->setColorScale(colorScale);
+    //    map1->setColorScale(colorScale);
+    //    map2->setColorScale(colorScale);
     map3->setColorScale(colorScale);
     // add a color scale:
     // Check if a color scale already exists
@@ -897,8 +901,8 @@ void ultrasound_Cscan_process::updatePlot() {
     this->customPlot2->yAxis->setRange(0, z_size);
     this->customPlot3->xAxis->setRange(0, x_size);
     this->customPlot3->yAxis->setRange(0, y_size);
-//    // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
-//    this->customPlot3->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
+    //    // Allow user to drag axis ranges with mouse, zoom with mouse wheel and select graphs by clicking:
+    //    this->customPlot3->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom | QCP::iSelectPlottables);
     // Call replot() to update the plot with the new data
     this->customPlot1->replot();
     this->customPlot2->replot();

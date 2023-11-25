@@ -348,7 +348,6 @@ void printWidgetInfo(QWidget *widget) {
         qDebug() << "--------------------------------";
     }
 }
-
 void printLayoutInfo(QLayout *layout) {
     if (layout) {
         qDebug() << "Layout:" << layout;
@@ -368,7 +367,6 @@ void printLayoutInfo(QLayout *layout) {
         qDebug() << "================================";
     }
 }
-
 
 // **************** fill in nan
 bool isNaN(double value) {

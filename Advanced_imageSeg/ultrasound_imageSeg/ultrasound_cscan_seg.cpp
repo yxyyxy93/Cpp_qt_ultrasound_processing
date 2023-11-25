@@ -24,23 +24,39 @@ ultrasound_cscan_seg::ultrasound_cscan_seg(QWidget *parent,
     // ********************* First page
     tabWidget->addTab(this, "Simple C-scan check 1");
 
-    // ******************** Second page
+    // ******************** 2nd page
     QWidget *page2 = new QWidget();
     this->layout2 = new QVBoxLayout(page2);
     QPushButton *myButton_Cscan = new QPushButton(tr("Plot C-scan images"), page2);
     connect(myButton_Cscan, &QPushButton::clicked, this, &ultrasound_cscan_seg::handleButton_Cscan);
     this->layout2->addWidget(myButton_Cscan);
     tabWidget->addTab(page2, "Image segmentation");
-    // ************* Third page
+    // ************* 3rd page
     QWidget *page3 = new QWidget();
     this->layout3 = new QVBoxLayout(page3);
     tabWidget->addTab(page3, "Noise add and save");
+    // Show the tab widget
+    tabWidget->show();
+
     // Initialize the progress bar for page3
     this->progressBarPage3 = new QProgressBar(page3);
     this->progressBarPage3->setRange(0, 100);
-    layout3->addWidget(this->progressBarPage3);
+    this->layout3->addWidget(this->progressBarPage3);
+    // select folder
+    QPushButton *selectFolderButton = new QPushButton(tr("select folder"), page3);
+    this->folderLabel = new QLabel(page3);
+    // Create a horizontal layout
+    QHBoxLayout *rowLayout = new QHBoxLayout(page3);
+    // Add the button and label to the horizontal layout
+    rowLayout->addWidget(selectFolderButton);
+    rowLayout->addWidget(this->folderLabel);
+    rowLayout->setSpacing(10); // Adjust spacing as needed
+    // Add the horizontal layout to your existing vertical layout (layout3)
+    this->layout3->addLayout(rowLayout);
+    connect(selectFolderButton, &QPushButton::clicked, this, &ultrasound_cscan_seg::selectFolder);
+    // ************
     // Check if the 'Add Noise' button already exists in the layout
-    if (!widgetExistsInLayout<QPushButton>(this->layout3, "myButton_multiSNR")) {
+    if (!widgetExistsInLayout<QPushButton>(this->layout3, "process(add noise, downsample, corp) and save")) {
         // Create the 'Add Noise' button
         QPushButton* myButton_multiSNR = new QPushButton(tr("Add multi SNR (separated by ,)"), this);
         myButton_multiSNR->setObjectName("myButton_multiplySNR"); // Assign unique object name
@@ -65,8 +81,14 @@ ultrasound_cscan_seg::ultrasound_cscan_seg(QWidget *parent,
         this->downsampleRateInput->setPlaceholderText("Enter downsample rate");
         this->layout3->addWidget(this->downsampleRateInput);
     }
-    // Show the tab widget
-    tabWidget->show();
+    // Check if the Crop Signal Input Field already exists in the layout
+    if (!widgetExistsInLayout<QLineEdit>(this->layout3, "cropSignalInput")) {
+        // Create the Crop Signal Input Field
+        this->cropSignalInput = new QLineEdit(this);
+        this->cropSignalInput->setObjectName("cropSignalInput"); // Assign unique object name
+        this->cropSignalInput->setPlaceholderText("Enter crop values (start, end)");
+        this->layout3->addWidget(this->cropSignalInput);
+    }
 }
 
 // ************* 2D analytic-signal and visualization
@@ -317,10 +339,19 @@ ultrasound_cscan_seg::~ultrasound_cscan_seg()
 void ultrasound_cscan_seg::handleButton_multiSNR() {
     QLineEdit* SNRInput = this->multisnrInput;
     qDebug() << SNRInput->text();
+    // read downsample ratio
     bool ok_ds;
     int downsampleRate = this->downsampleRateInput->text().toInt(&ok_ds);
     if (!ok_ds || downsampleRate <= 0) {
         // Handle error: invalid input
+        return;
+    }
+    // read the corping values for signal
+    int startValue, endValue;
+    this->readCropValues(startValue, endValue);
+    // Check if values are valid, assuming that startValue should be less than endValue
+    if (startValue < 0 || endValue <= startValue) {
+        qDebug() << "Invalid cropping range. Start should be less than End.";
         return;
     }
     if (SNRInput) {
@@ -358,8 +389,8 @@ void ultrasound_cscan_seg::handleButton_multiSNR() {
                 if (!this->C_scan_double.isEmpty() && !this->C_scan_double[0].isEmpty()) {
                     int x = this->C_scan_double.size();
                     int y = this->C_scan_double[0].size();
-                    int z = this->C_scan_double[0][0].size();
-                    out << x << "," << y << "," << z/downsampleRate << "\n";
+                    int z = endValue-startValue+1;
+                    out << x << "," << y << "," << z << "\n";
                 } else {
                     qWarning() << "Data is empty, cannot write to file";
                     file.close();
@@ -370,9 +401,8 @@ void ultrasound_cscan_seg::handleButton_multiSNR() {
                         QVector<double> Ascan = this->C_scan_double[i][j]; // avoid too small value
                         addGaussianNoise(Ascan, snrDb);
                         QVector<double> Ascan_ds = downsampleVector(Ascan, downsampleRate);
-                        //                        addGaussianNoise(Ascan_ds, snrDb);
                         QStringList values;
-                        for (int k = 0; k <Ascan_ds.size(); ++k) {
+                        for (int k = startValue; k <= endValue; ++k) {
                             values << QString::number(1e10*Ascan_ds[k]);
                             if (std::isnan(1e10*Ascan_ds[k]))
                                 qDebug() << "nan at: " << k;
@@ -392,5 +422,70 @@ void ultrasound_cscan_seg::handleButton_multiSNR() {
             }
         }
         this->progressBarPage3->setValue(100); // Final progress bar update
+    }
+}
+
+void ultrasound_cscan_seg::selectFolder() {
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Select Folder"), "/home",
+                                                    QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    this->folderLabel->setText("Selected folder: " + dir);
+    processFolder(dir);
+}
+
+void ultrasound_cscan_seg::processFolder(const QString &path) {
+    QDir dir(path);
+    // Get the list of all directories and files, excluding '.' and '..'
+    QFileInfoList list = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot, QDir::DirsFirst);
+
+    for (const QFileInfo &fileInfo : list) {
+        if (fileInfo.isDir()) {
+            // Process only the first-level subdirectories
+            QDir subDir(fileInfo.absoluteFilePath());
+            QFileInfoList subList = subDir.entryInfoList(QStringList() << "_*.csv", QDir::Files);
+            for (const QFileInfo &subFileInfo : subList) {
+                // Process .csv file and read the data
+                qDebug() << "Found CSV file:" << subFileInfo.absoluteFilePath();
+                this->fn = subFileInfo.absoluteFilePath();
+                QFileInfo fileInfo(this->fn);
+                this->C_scan_double.clear();
+                this->C_scan_AS.clear();
+                this->processFile(fileInfo);
+                // save
+                this->handleButton_multiSNR();
+            }
+        }
+    }
+}
+
+
+// read the crop values (start, end) from the inputline
+void ultrasound_cscan_seg::readCropValues(int& start, int& end) {
+    // Default values
+    start = 0;
+    end = 0;
+    if (this->cropSignalInput) {
+        QString inputText = this->cropSignalInput->text();
+        QStringList values = inputText.split(',');
+        // Ensure two values are provided
+        if (values.size() == 2) {
+            bool ok1, ok2;
+            // Parse the start value
+            int tempStart = values[0].trimmed().toInt(&ok1);
+            // Parse the end value
+            int tempEnd = values[1].trimmed().toInt(&ok2);
+            if (ok1 && ok2) {
+                start = tempStart;
+                end = tempEnd;
+            } else {
+                // Handle the error if the values are not integers
+                qDebug() << "Invalid input for cropping values. Please enter integers.";
+            }
+        } else {
+            // Handle the error if there aren't exactly two values
+            qDebug() << "Please enter exactly two values for cropping, separated by a comma.";
+        }
+    } else {
+        // Handle the error if cropSignalInput is not initialized
+        qDebug() << "Crop Signal Input field is not initialized.";
     }
 }

@@ -40,6 +40,8 @@ private slots:
 
     // slot on page3
     void handleButton_multiSNR();
+    void selectFolder();
+
 public slots:
     void closeDrawnArea();
 
@@ -69,6 +71,12 @@ private:
     QProgressBar* progressBarPage3;
     QLineEdit* multisnrInput;
     QLineEdit* downsampleRateInput;
+    QLineEdit* cropSignalInput;
+
+    QLabel *folderLabel;
+    void processFolder(const QString &path);
+    void readCropValues(int& start, int& end);
+
 };
 #endif // ULTRASOUND_CSCAN_SEG_H
 
