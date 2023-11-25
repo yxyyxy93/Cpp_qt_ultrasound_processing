@@ -37,7 +37,6 @@ ultrasound_cscan_seg::ultrasound_cscan_seg(QWidget *parent,
     tabWidget->addTab(page3, "Noise add and save");
     // Show the tab widget
     tabWidget->show();
-
     // Initialize the progress bar for page3
     this->progressBarPage3 = new QProgressBar(page3);
     this->progressBarPage3->setRange(0, 100);
@@ -73,7 +72,6 @@ ultrasound_cscan_seg::ultrasound_cscan_seg(QWidget *parent,
         this->layout3->addWidget(this->multisnrInput);
     }
     // add a button to downsapmle the data
-    // Check if the Downsample Rate Input exists
     if (!widgetExistsInLayout<QLineEdit>(this->layout3, "downsampleRateInput")) {
         // Create the Downsample Rate Input Field
         this->downsampleRateInput = new QLineEdit(this);
@@ -113,10 +111,8 @@ void ultrasound_cscan_seg::handleButton_Cscan() {
                             arg(scrollBarZ_page2->minimum()).arg(scrollBarZ_page2->maximum()).arg(value);
         sBZ_label->setText(labelText);
     });
-
     //    // Create the QCustomPlot widget
     //    this->customPlot1_page2 = new QCustomPlot();
-    //    this->customPlot2_page2 = new QCustomPlot();
     //    // Create a horizontal layout for the main window
     QWidget *rightPanel = new QWidget();
     QHBoxLayout *hLayout = new QHBoxLayout();
@@ -450,6 +446,7 @@ void ultrasound_cscan_seg::processFolder(const QString &path) {
                 this->C_scan_double.clear();
                 this->C_scan_AS.clear();
                 this->processFile(fileInfo);
+                fillNanWithNearestNeighbors(this->C_scan_double);
                 // save
                 this->handleButton_multiSNR();
             }
