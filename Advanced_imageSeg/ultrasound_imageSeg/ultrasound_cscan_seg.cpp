@@ -447,6 +447,9 @@ void ultrasound_cscan_seg::processFolder(const QString &path) {
                 this->C_scan_AS.clear();
                 this->processFile(fileInfo);
                 fillNanWithNearestNeighbors(this->C_scan_double);
+                // align the surface
+                ultrasound_Cscan_process::calculateSurface();
+//                ultrasound_Cscan_process::handleButton_alignsurface();
                 // save
                 this->handleButton_multiSNR();
             }

@@ -1,1 +1,7 @@
 *.png
+build/
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+*.qbs.user
+*.qbs.user.*

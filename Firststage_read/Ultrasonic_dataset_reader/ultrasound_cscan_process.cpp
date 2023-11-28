@@ -71,6 +71,8 @@ ultrasound_Cscan_process::ultrasound_Cscan_process(QWidget *parent,
     this->m_progressBar = new QProgressBar;
     this->m_progressBar->setRange(0, 100);
     this->addNewWidgetAndReorderLayout(this->m_progressBar);
+
+    // ****
 }
 
 ultrasound_Cscan_process::~ultrasound_Cscan_process(){
@@ -447,36 +449,11 @@ void ultrasound_Cscan_process::handleButton_addNoise(){
     }
 }
 
-// **************** define surface
-// Slot to perform the task
+// **************** define surfac
 void ultrasound_Cscan_process::handleButton_surface()
 {
-    // loop through each element and compare to max value
-    QVector<double> Front_surface_idx_i;
-    QVector<double> Front_surface_val_i;
-    for(int i = 0; i < this->C_scan_AS.size(); i++){
-        for(int j = 0; j < this->C_scan_AS[i].size(); j++){
-            // Find the maximum value and its index
-            QVector<std::complex<double>> Ascan_as = this->C_scan_AS[i][j];
-            // find the max
-            QVector<std::complex<double>>::iterator maxElementIndex;
-            maxElementIndex = std::max_element(Ascan_as.begin(),
-                                               Ascan_as.end(),
-                                               [](std::complex<double> a, std::complex<double> b) {
-                                                   return std::abs(a) < std::abs(b);
-                                               });
-            Front_surface_idx_i.push_back(std::distance(Ascan_as.begin(), maxElementIndex));
-            Front_surface_val_i.push_back(std::abs(*maxElementIndex));
-            this->m_progressBar->setValue(100 * i / this->C_scan_double.size());
-            // Update the progress bar
-            QCoreApplication::processEvents(); // Allow GUI updates
-        }
-        // add to 2D QVector
-        this->Front_surface_idx.push_back(Front_surface_idx_i);
-        this->Front_surface_val.push_back(Front_surface_val_i);
-        Front_surface_idx_i.clear();
-        Front_surface_val_i.clear();
-    }
+    this->calculateSurface();
+
     this->m_progressBar->setValue(100);
     // add a Qlabel
     this->myButton_surface ->setText("Determine the surface (Surface found!)");
@@ -497,6 +474,10 @@ void ultrasound_Cscan_process::handleButton_surface()
                 &QPushButton::clicked, this,
                 &ultrasound_Cscan_process::handleButton_alignsurface);
     }
+
+    // dynamic memory management
+    this->pushButtons.append(myButton_plotsurface);
+    this->pushButtons.append(myButton_alignsurface);
 }
 
 void ultrasound_Cscan_process::handleButton_alignsurface(){
@@ -508,7 +489,7 @@ void ultrasound_Cscan_process::handleButton_alignsurface(){
                           this->Front_surface_idx[i][j]:min_idx;
         }
     }
-    min_idx = 50; // manual setting !!!!!!!!
+    min_idx = 500; // manual setting !!!!!!!!
     qDebug() << min_idx;
     // shift
     for(int i = 0; i < this->Front_surface_idx.size(); i++){
@@ -521,7 +502,8 @@ void ultrasound_Cscan_process::handleButton_alignsurface(){
                            front_idx-min_idx);
         }
     }
-    this->myButton_alignsurface ->setText("Align front surface (Surface aligned!)");
+    if(this->myButton_alignsurface)
+        this->myButton_alignsurface ->setText("Align front surface (Surface aligned!)");
 }
 
 void ultrasound_Cscan_process::handleButton_plotsurface(){
@@ -608,6 +590,41 @@ void ultrasound_Cscan_process::handleButton_plotsurface(){
     this->SpinBoxes.append(minColorBound);
     this->SpinBoxes.append(maxColorBound);
     // ...
+}
+
+void ultrasound_Cscan_process::calculateSurface() {
+    if (!this->Front_surface_idx.isEmpty())
+        this->Front_surface_idx.clear();
+    if (!this->Front_surface_val.isEmpty())
+        this->Front_surface_val.clear();
+
+    QVector<double> Front_surface_idx_i;
+    QVector<double> Front_surface_val_i;
+    // I set this threshold to avoid the bug in simulation data: finding the second echo as max.
+    int prevMaxIndex = 0;  // Initial value, adjust based on your data requirements
+    int threshold = 600; // threshold for the max index
+    for (int i = 0; i < this->C_scan_AS.size(); i++) {
+        for (int j = 0; j < this->C_scan_AS[i].size(); j++) {
+            QVector<std::complex<double>> Ascan_as = this->C_scan_AS[i][j];
+            auto maxElementIndex = std::max_element(Ascan_as.begin(), Ascan_as.end(),
+                                                    [](std::complex<double> a, std::complex<double> b) {
+                                                        return std::abs(a) < std::abs(b);
+                                                    });
+
+            int currentIndex = std::distance(Ascan_as.begin(), maxElementIndex);
+            if (currentIndex > threshold) {
+                currentIndex = prevMaxIndex;  // Use the previous value if threshold is exceeded
+            } else {
+                prevMaxIndex = currentIndex;  // Update the previous value
+            }
+            Front_surface_idx_i.push_back(currentIndex);
+            Front_surface_val_i.push_back(std::abs(*maxElementIndex));
+        }
+        this->Front_surface_idx.push_back(Front_surface_idx_i);
+        this->Front_surface_val.push_back(Front_surface_val_i);
+        Front_surface_idx_i.clear();
+        Front_surface_val_i.clear();
+    }
 }
 
 // *************visualization
@@ -737,17 +754,6 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
     plot3l->addWidget(comboBox);
     plot3l->addWidget(this->customPlot3);
 
-    // Modify spacer items
-    QSpacerItem* spacer1 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    plot1l->addItem(spacer1);
-    plot1l->addStretch(1); // Add stretch below the plot
-    QSpacerItem* spacer2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    plot2l->addItem(spacer2);
-    plot2l->addStretch(1); // Add stretch below the plot
-    QSpacerItem* spacer3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-    plot3l->addItem(spacer3);
-    plot3l->addStretch(1); // Add stretch below the plot
-
     // Adjust the horizontal layout
     hLayout->setStretch(0, 1); // Assign stretch factor to plot1w
     hLayout->setStretch(1, 1); // Assign stretch factor to plot2w
@@ -784,6 +790,8 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
     this->vLayouts.append(plot3l);
 
     this->pushButtons.append(deleteAllButton);
+
+    this->comboxes.append(comboBox);
     // ...
 }
 
@@ -1070,6 +1078,11 @@ void ultrasound_Cscan_process::clearAllDynamicMemory() {
         delete label;
     }
     labels.clear();
+
+    for (QComboBox * combox: comboxes){
+        delete combox;
+    }
+    comboxes.clear();
 
     for (QWidget *widget : widgets) {
         widget->deleteLater();

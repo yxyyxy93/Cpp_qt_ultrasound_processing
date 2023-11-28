@@ -104,9 +104,13 @@ private:
     QVector<QCPColorMap*> maps;
     QVector<QCPColorScale*> colorScales;
     QVector<QDoubleSpinBox*> SpinBoxes;
+    QVector<QComboBox*> comboxes;
 
     // C-scan settings
     int CscanPlotMode=2; // default single slice
+
+    // calculations
+    void calculateSurface();
 
 protected:
     // layout
