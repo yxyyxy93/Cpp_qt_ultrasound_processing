@@ -1,5 +1,8 @@
 *.png
 build/
+release/
+debug/
+qtc_clangd/
 *.pro.user
 *.pro.user.*
 *.qmake.stash

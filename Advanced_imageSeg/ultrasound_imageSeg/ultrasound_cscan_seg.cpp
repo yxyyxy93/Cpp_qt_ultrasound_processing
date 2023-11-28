@@ -10,7 +10,7 @@
 #include <customgraphicsscene.h>
 #include <complex>
 #include "JetColorMap.h"
-#include "../../Firststage_read/Ultrasonic_dataset_reader/utils.h"
+#include "..\..\Firststage_read\Ultrasonic_dataset_reader\utils.h"
 
 ultrasound_cscan_seg::ultrasound_cscan_seg(QWidget *parent,
                                            QString fn,

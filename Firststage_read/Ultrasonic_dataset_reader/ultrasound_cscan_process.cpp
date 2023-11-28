@@ -347,7 +347,7 @@ void ultrasound_Cscan_process::processFile(const QFileInfo &fileInfo) {
         dir.setNameFilters(QStringList() << "*.dat");
         dir.setFilter(QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks);
         QFileInfoList fileInfoList = dir.entryInfoList();
-        int tl;
+        int tl(0);
         if(fileInfoList.size() == 1) {
             QVector<double> data = readDatFile(fileInfoList.first().absoluteFilePath());
             // Get the length of the data

@@ -4,7 +4,8 @@
 #include <QMainWindow>
 
 #include <QtWidgets>
-#include "..\..\Firststage_read\Ultrasonic_dataset_reader\ultrasound_cscan_process.h"
+
+#include "../../Firststage_read/Ultrasonic_dataset_reader/ultrasound_cscan_process.h"
 #include <memory>
 
 #include "customgraphicsscene.h"

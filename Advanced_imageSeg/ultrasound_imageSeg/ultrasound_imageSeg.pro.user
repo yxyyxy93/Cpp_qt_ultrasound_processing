@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 11.0.3, 2023-11-27T18:10:03. -->
+<!-- Written by QtCreator 11.0.3, 2023-11-28T18:09:47. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -139,7 +139,7 @@
     <value type="int" key="Qt4ProjectManager.Qt4BuildConfiguration.BuildConfiguration">2</value>
    </valuemap>
    <valuemap type="QVariantMap" key="ProjectExplorer.Target.BuildConfiguration.1">
-    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\cpp_qt_work\ultrasound_process_pipeline\Advanced_imageSeg\build-ultrasound_imageSeg-Desktop_Qt_6_4_3_MinGW_64_bit-Release</value>
+    <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory">D:\cpp_qt_work\ultrasound_processing\Cpp_qt_ultrasound_processing\Advanced_imageSeg\ultrasound_imageSeg</value>
     <value type="QString" key="ProjectExplorer.BuildConfiguration.BuildDirectory.shadowDir">D:/cpp_qt_work/ultrasound_process_pipeline/Advanced_imageSeg/build-ultrasound_imageSeg-Desktop_Qt_6_4_3_MinGW_64_bit-Release</value>
     <valuemap type="QVariantMap" key="ProjectExplorer.BuildConfiguration.BuildStepList.0">
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
@@ -242,8 +242,9 @@
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="bool" key="PE.EnvironmentAspect.PrintOnRun">false</value>
-    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:D:/cpp_qt_work/ultrasound_process_pipeline/Advanced_imageSeg/ultrasound_imageSeg/ultrasound_imageSeg.pro</value>
-    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">D:/cpp_qt_work/ultrasound_process_pipeline/Advanced_imageSeg/ultrasound_imageSeg/ultrasound_imageSeg.pro</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">ultrasound_imageSeg2</value>
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:D:/cpp_qt_work/ultrasound_processing/Cpp_qt_ultrasound_processing/Advanced_imageSeg/ultrasound_imageSeg/ultrasound_imageSeg.pro</value>
+    <value type="QString" key="ProjectExplorer.RunConfiguration.BuildKey">D:/cpp_qt_work/ultrasound_processing/Cpp_qt_ultrasound_processing/Advanced_imageSeg/ultrasound_imageSeg/ultrasound_imageSeg.pro</value>
     <value type="bool" key="RunConfiguration.UseCppDebuggerAuto">true</value>
     <value type="bool" key="RunConfiguration.UseLibrarySearchPath">true</value>
     <value type="bool" key="RunConfiguration.UseQmlDebuggerAuto">true</value>
