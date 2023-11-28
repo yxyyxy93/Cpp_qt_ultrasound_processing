@@ -110,7 +110,7 @@ private:
 
 protected:
     // layout
-    QVBoxLayout *layout;
+    QVBoxLayout *layout=nullptr;
 
     // 3D dataset
     QVector<QVector<QVector<double>>> C_scan_double;

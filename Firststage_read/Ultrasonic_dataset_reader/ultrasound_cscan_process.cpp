@@ -31,6 +31,12 @@ ultrasound_Cscan_process::ultrasound_Cscan_process(QWidget *parent,
     , customPlot_Ascan(nullptr)
 {
     this->layout = new QVBoxLayout(this);
+    // Set the QVBoxLayout as the main layout of the widget
+    this->setLayout(this->layout);
+
+    // Ensure that the QWidget and its layout can expand vertically
+    this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    this->layout->setAlignment(Qt::AlignTop); // Align widgets to the top, allowing them to expand downwards
 
     // ************** create the push buttons and correponding labels
     this->myButton_load = new QPushButton(tr("Load data"), this);
@@ -611,47 +617,35 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
     this->customPlot1 = new QCustomPlot();
     this->customPlot2 = new QCustomPlot();
     this->customPlot3 = new QCustomPlot();
-    // Qcustomplot
+
+    // Create the ScrollBars and Labels
     this->scrollBarX = new QScrollBar(Qt::Horizontal);
     this->scrollBarY = new QScrollBar(Qt::Horizontal);
     this->scrollBarZ = new QScrollBar(Qt::Horizontal);
-    //
+
     QLabel *sBX_label = new QLabel();
+    QLabel *sBY_label = new QLabel();
+    QLabel *sBZ_label = new QLabel();
+
+    // ... [Connect signals and slots as before] ...
     // Connect the scrollbar's valueChanged() signal to a slot that updates the label text
     connect(scrollBarX, &QScrollBar::valueChanged, [=](int value) {
         QString labelText = QString("Min: %1 Max: %2 Current: %3").
                             arg(scrollBarX->minimum()).arg(scrollBarX->maximum()).arg(value);
         sBX_label->setText(labelText);
     });
-    QLabel *sBY_label = new QLabel();
     // Connect the scrollbar's valueChanged() signal to a slot that updates the label text
     connect(scrollBarY, &QScrollBar::valueChanged, [=](int value) {
         QString labelText = QString("Min: %1 Max: %2 Current: %3").
                             arg(scrollBarY->minimum()).arg(scrollBarY->maximum()).arg(value);
         sBY_label->setText(labelText);
     });
-    QLabel *sBZ_label = new QLabel();
     // Connect the scrollbar's valueChanged() signal to a slot that updates the label text
     connect(scrollBarZ, &QScrollBar::valueChanged, [=](int value) {
         QString labelText = QString("Min: %1 Max: %2 Current: %3").
                             arg(scrollBarZ->minimum()).arg(scrollBarZ->maximum()).arg(value);
         sBZ_label->setText(labelText);
     });
-    // Create a horizontal layout for the main window
-    QWidget *rightPanel = new QWidget();
-    QHBoxLayout *hLayout = new QHBoxLayout();
-    // Create a vertical layout for 1
-    QVBoxLayout *plot1l = new QVBoxLayout();
-    QWidget *plot1w = new QWidget();
-    plot1w->setLayout(plot1l);
-    // Create a vertical layout for 2
-    QVBoxLayout *plot2l = new QVBoxLayout();
-    QWidget *plot2w = new QWidget();
-    plot2w->setLayout(plot2l);
-    // Create a vertical layout for 3
-    QVBoxLayout *plot3l = new QVBoxLayout();
-    QWidget *plot3w = new QWidget();
-    plot3w->setLayout(plot3l);
     // Create the combo box and add the selection options
     QComboBox *comboBox = new QComboBox();
     comboBox->addItem("Max");
@@ -665,7 +659,6 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
     QPushButton *deleteAllButton = new QPushButton("Delete All");
     this->addNewWidgetAndReorderLayout(deleteAllButton);
     connect(deleteAllButton, &QPushButton::clicked, this, &ultrasound_Cscan_process::clearAllDynamicMemory);
-    //    this->layout->addWidget(rightPanel);
     // Connect the valueChanged() signals of the QScrollBars to update the plot data
     QObject::connect(this->scrollBarX, &QScrollBar::valueChanged, this,
                      &ultrasound_Cscan_process::updatePlot);
@@ -673,6 +666,36 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
                      &ultrasound_Cscan_process::updatePlot);
     QObject::connect(this->scrollBarZ, &QScrollBar::valueChanged, this,
                      &ultrasound_Cscan_process::updatePlot);
+
+    // Create the main horizontal layout
+    QHBoxLayout *hLayout = new QHBoxLayout();
+    // Assuming 'this->layout' is the existing layout of the widget
+    this->layout->addLayout(hLayout);
+
+    // Create and populate vertical layouts for each plot
+    QVBoxLayout *plot1l = new QVBoxLayout();
+    plot1l->addWidget(this->scrollBarX);
+    plot1l->addWidget(sBX_label);
+    plot1l->addWidget(this->customPlot1);
+
+    QVBoxLayout *plot2l = new QVBoxLayout();
+    plot2l->addWidget(this->scrollBarY);
+    plot2l->addWidget(sBY_label);
+    plot2l->addWidget(this->customPlot2);
+
+    QVBoxLayout *plot3l = new QVBoxLayout();
+    plot3l->addWidget(this->scrollBarZ);
+    plot3l->addWidget(sBZ_label);
+    plot3l->addWidget(comboBox); // Assuming comboBox is defined earlier
+    plot3l->addWidget(this->customPlot3);
+
+    // Add the vertical layouts to the main horizontal layout
+    hLayout->addLayout(plot1l);
+    hLayout->addLayout(plot2l);
+    hLayout->addLayout(plot3l);
+    // Add the horizontal layout to the existing main layout of the widget
+    this->setLayout(hLayout);
+
     // Set the range of the QScrollBars based on the size of the data
     this->scrollBarX->setRange(0, this->C_scan_AS.size() - 1);
     this->scrollBarY->setRange(0, this->C_scan_AS[0].size() - 1);
@@ -685,52 +708,62 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
     this->customPlot1->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     this->customPlot2->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     this->customPlot3->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    this->scrollBarX->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    this->scrollBarY->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    this->scrollBarZ->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    sBX_label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    sBY_label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    sBZ_label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    comboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    this->scrollBarX->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    this->scrollBarY->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    this->scrollBarZ->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    sBX_label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    sBY_label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    sBZ_label->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    comboBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    // Ensure container widgets have the right size policy
-    plot1w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    plot2w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    plot3w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    this->customPlot1->setMinimumSize(200, 200); // Example size, adjust as needed
+    this->customPlot1->setMaximumHeight(1280); // Example size, adjust as needed
+    this->customPlot2->setMinimumSize(200, 200); // Example size, adjust as needed
+    this->customPlot2->setMaximumHeight(1280); // Example size, adjust as needed
+    this->customPlot3->setMinimumSize(200, 200); // Example size, adjust as needed
+    this->customPlot3->setMaximumHeight(1280); // Example size, adjust as needed
 
-    // Modify vertical layouts
+     // Modify vertical layouts
     plot1l->addWidget(scrollBarX);
     plot1l->addWidget(sBX_label);
     plot1l->addWidget(this->customPlot1);
-    //    plot1l->addStretch(1); // Add stretch factor
 
     plot2l->addWidget(scrollBarY);
     plot2l->addWidget(sBY_label);
     plot2l->addWidget(this->customPlot2);
-    //    plot2l->addStretch(1); // Add stretch factor
 
     plot3l->addWidget(scrollBarZ);
     plot3l->addWidget(sBZ_label);
     plot3l->addWidget(comboBox);
     plot3l->addWidget(this->customPlot3);
-    //    plot3l->addStretch(1); // Add stretch factor
-    // Adjust the horizontal layout
-    hLayout->addWidget(plot1w);
-    hLayout->addWidget(plot2w);
-    hLayout->addWidget(plot3w);
-    //    hLayout->setStretch(0, 1); // Assign stretch factor to plot1w
-    //    hLayout->setStretch(1, 1); // Assign stretch factor to plot2w
-    //    hLayout->setStretch(2, 1); // Assign stretch factor to plot3w
-    // Set the horizontal layout to the main widget or window
-    rightPanel->setLayout(hLayout);
-    this->addNewWidgetAndReorderLayout(rightPanel);
-    rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
+    // Modify spacer items
+    QSpacerItem* spacer1 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+    plot1l->addItem(spacer1);
+    plot1l->addStretch(1); // Add stretch below the plot
+    QSpacerItem* spacer2 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+    plot2l->addItem(spacer2);
+    plot2l->addStretch(1); // Add stretch below the plot
+    QSpacerItem* spacer3 = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+    plot3l->addItem(spacer3);
+    plot3l->addStretch(1); // Add stretch below the plot
+
+    // Adjust the horizontal layout
+    hLayout->setStretch(0, 1); // Assign stretch factor to plot1w
+    hLayout->setStretch(1, 1); // Assign stretch factor to plot2w
+    hLayout->setStretch(2, 1); // Assign stretch factor to plot3w
+
+    // Set the horizontal layout to the main widget or window
     //    printWidgetInfo(this->customPlot3);
-    //    printWidgetInfo(plot3w);
-    //    printWidgetInfo(rightPanel);
-    printLayoutInfo(hLayout);
-    printLayoutInfo(plot3l);
+    //    printLayoutInfo(plot3l);
+
+    qDebug() << "Plot Layout size hint:" << plot1l->sizeHint();
+    qDebug() << "CustomPlot1 size policy:" << this->customPlot1->sizePolicy().horizontalPolicy()
+             << this->customPlot1->sizePolicy().verticalPolicy();
+
+    // After making changes to the layout, update the widget
+    this->update(); // This will schedule a repaint event for the widget
+    this->adjustSize(); // This will adjust the size of the widget to fit its contents
 
     // dynamic memory management
     this->customPlots.append(this->customPlot1);
@@ -744,11 +777,6 @@ void ultrasound_Cscan_process::handleButton_orthoslice() {
     this->labels.append(sBX_label);
     this->labels.append(sBY_label);
     this->labels.append(sBZ_label);
-
-    this->widgets.append(rightPanel);
-    this->widgets.append(plot1w);
-    this->widgets.append(plot2w);
-    this->widgets.append(plot3w);
 
     this->hLayouts.append(hLayout);
     this->vLayouts.append(plot1l);
@@ -865,27 +893,28 @@ void ultrasound_Cscan_process::updatePlot() {
     }
     //
     map3->setGradient(QCPColorGradient::gpJet);
-    // Add a color scale to the custom plot widget
-    QCPColorScale *colorScale = new QCPColorScale(this->customPlot3);
-    // Set the color map for the color scale
-    colorScale->setDataRange(map3->dataRange());
-    colorScale->setGradient(map3->gradient());
-    //    map1->setColorScale(colorScale);
-    //    map2->setColorScale(colorScale);
-    map3->setColorScale(colorScale);
-    // add a color scale:
-    // Check if a color scale already exists
-    for (int i = 0; i < this->customPlot3->plotLayout()->elementCount(); ++i) {
-        QCPLayoutElement *element = this->customPlot3->plotLayout()->elementAt(i);
-        if (QCPColorScale *existingColorScale = qobject_cast<QCPColorScale *>(element)) {
-            // Remove existing color scale
-            this->customPlot3->plotLayout()->remove(existingColorScale);
-            break; // Assuming there is only one color scale
-        }
-    }
-    this->customPlot3->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
-    colorScale->setType(QCPAxis::atRight); // scale shall be vertical bar with tick/axis labels right (actually atRight is already the default)// associate the color map with the color scale
-    colorScale->axis()->setLabel("Amp. (arb.)");
+//    // Add a color scale to the custom plot widget
+//    QCPColorScale *colorScale = new QCPColorScale(this->customPlot3);
+//    // Set the color map for the color scale
+//    colorScale->setDataRange(map3->dataRange());
+//    colorScale->setGradient(map3->gradient());
+//    //    map1->setColorScale(colorScale);
+//    //    map2->setColorScale(colorScale);
+//    map3->setColorScale(colorScale);
+//    // add a color scale:
+//    // Check if a color scale already exists
+//    for (int i = 0; i < this->customPlot3->plotLayout()->elementCount(); ++i) {
+//        QCPLayoutElement *element = this->customPlot3->plotLayout()->elementAt(i);
+//        if (QCPColorScale *existingColorScale = qobject_cast<QCPColorScale *>(element)) {
+//            // Remove existing color scale
+//            this->customPlot3->plotLayout()->remove(existingColorScale);
+//            break; // Assuming there is only one color scale
+//        }
+//    }
+//    this->customPlot3->plotLayout()->addElement(0, 1, colorScale); // add it to the right of the main axis rect
+//    colorScale->setType(QCPAxis::atRight); // scale shall be vertical bar with tick/axis labels right (actually atRight is already the default)// associate the color map with the color scale
+//    colorScale->axis()->setLabel("Amp. (arb.)");
+
     // Rescale the color map data range to fit the new data
     map1->rescaleDataRange(true);
     map2->rescaleDataRange(true);
