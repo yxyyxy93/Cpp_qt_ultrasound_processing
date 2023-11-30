@@ -2,9 +2,11 @@
 # ----------------------------------------------------------------------------
 *.png
 build/
+Dataset/
 release/
 debug/
 qtc_clangd/
+.qtc_clangd/
 
 # general
 *.user
